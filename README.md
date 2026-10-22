@@ -38,7 +38,7 @@ Aplicación móvil desarrollada en Android Studio para el emprendimiento chileno
 
 ## Pasos para Ejecutar la Aplicación
 1. Clonar este repositorio público:
-   git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+   git clone (https://github.com/isabelrosemc/LouArayaMacrame.git)
 2. Abrir el proyecto en Android Studio (última versión recomendada).
 3. Sincronizar el proyecto con los archivos de configuración de Gradle.
 4. (Opcional para mapas completos) Reemplazar la variable MAPS_API_KEY en AndroidManifest.xml o local.properties con una clave válida de Google Maps SDK.
