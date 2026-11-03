@@ -24,6 +24,9 @@ android {
     buildFeatures { compose = true }
 }
 dependencies {
+    // OpenStreetMap para Android (No requiere API Key ni tarjeta de crédito)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.compose.ui:ui")
