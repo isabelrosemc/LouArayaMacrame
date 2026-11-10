@@ -19,8 +19,15 @@ class ProductoViewModel : ViewModel() {
     fun filtrar(valor: String) { _categoria.value = valor }
     fun obtener(id: Int) = _productos.value.find { it.id == id }
 
-    // Función requerida por el panel de Administrador para agregar nuevas piezas
+    // Agrega una nueva pieza textil
     fun agregarProducto(p: Producto) {
         _productos.value = _productos.value + p
+    }
+
+    // Permite actualizar piezas existentes (precio, medidas, etc.) sin romper dependencias
+    fun actualizarProducto(productoActualizado: Producto) {
+        _productos.value = _productos.value.map { producto ->
+            if (producto.id == productoActualizado.id) productoActualizado else producto
+        }
     }
 }
