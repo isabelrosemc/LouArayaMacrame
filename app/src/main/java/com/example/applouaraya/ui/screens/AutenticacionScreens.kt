@@ -86,7 +86,14 @@ fun RegistroScreen(vm: SesionViewModel, volver: () -> Unit) {
     var direccion by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     var confirmarContrasena by remember { mutableStateOf("") }
-    var errorLocal by remember { mutableStateOf<String?>(null) }
+
+    // Estados de error individuales por campo
+    var errorNombre by remember { mutableStateOf<String?>(null) }
+    var errorAlias by remember { mutableStateOf<String?>(null) }
+    var errorCorreo by remember { mutableStateOf<String?>(null) }
+    var errorContrasena by remember { mutableStateOf<String?>(null) }
+    var errorConfirmar by remember { mutableStateOf<String?>(null) }
+
     val mensaje by vm.mensaje.collectAsStateWithLifecycle()
 
     Column(
@@ -94,7 +101,7 @@ fun RegistroScreen(vm: SesionViewModel, volver: () -> Unit) {
             .fillMaxSize()
             .padding(20.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Registro de Cliente", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -103,34 +110,66 @@ fun RegistroScreen(vm: SesionViewModel, volver: () -> Unit) {
             onImagenSeleccionada = { /* Vista previa en memoria */ }
         )
 
+        // Nombre
         OutlinedTextField(
             value = nombre,
-            onValueChange = { nombre = it; errorLocal = null },
+            onValueChange = {
+                nombre = it
+                errorNombre = if (it.isBlank()) "El nombre es obligatorio" else null
+            },
             label = { Text("Nombre completo *") },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            isError = errorNombre != null,
+            supportingText = { errorNombre?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+            trailingIcon = {
+                if (errorNombre != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Alias
         OutlinedTextField(
             value = alias,
-            onValueChange = { alias = it; errorLocal = null },
+            onValueChange = {
+                alias = it
+                errorAlias = if (it.isBlank()) "El alias es obligatorio" else null
+            },
             label = { Text("Alias único *") },
             leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
+            isError = errorAlias != null,
+            supportingText = { errorAlias?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+            trailingIcon = {
+                if (errorAlias != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Correo electrónico con validación estricta (observación del audio)
         OutlinedTextField(
             value = correo,
-            onValueChange = { correo = it; errorLocal = null },
+            onValueChange = {
+                correo = it
+                errorCorreo = when {
+                    it.isBlank() -> "El correo es obligatorio"
+                    !vm.esCorreoValido(it) -> "Ingresa un correo válido (ej: usuario@correo.com)"
+                    else -> null
+                }
+            },
             label = { Text("Correo electrónico *") },
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            isError = errorCorreo != null,
+            supportingText = { errorCorreo?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+            trailingIcon = {
+                if (errorCorreo != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Teléfono
         OutlinedTextField(
             value = telefono,
             onValueChange = { telefono = it },
@@ -141,6 +180,7 @@ fun RegistroScreen(vm: SesionViewModel, volver: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Dirección
         OutlinedTextField(
             value = direccion,
             onValueChange = { direccion = it },
@@ -150,31 +190,58 @@ fun RegistroScreen(vm: SesionViewModel, volver: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Contraseña
         OutlinedTextField(
             value = contrasena,
-            onValueChange = { contrasena = it; errorLocal = null },
+            onValueChange = {
+                contrasena = it
+                errorContrasena = when {
+                    it.isBlank() -> "La contraseña es obligatoria"
+                    it.length < 8 -> "Debe tener al menos 8 caracteres"
+                    else -> null
+                }
+                if (confirmarContrasena.isNotBlank() && it != confirmarContrasena) {
+                    errorConfirmar = "Las contraseñas no coinciden"
+                } else if (confirmarContrasena.isNotBlank()) {
+                    errorConfirmar = null
+                }
+            },
             label = { Text("Contraseña (mínimo 8 caracteres) *") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            isError = errorContrasena != null,
+            supportingText = { errorContrasena?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+            trailingIcon = {
+                if (errorContrasena != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Confirmar contraseña
         OutlinedTextField(
             value = confirmarContrasena,
-            onValueChange = { confirmarContrasena = it; errorLocal = null },
+            onValueChange = {
+                confirmarContrasena = it
+                errorConfirmar = when {
+                    it.isBlank() -> "Debes repetir la contraseña"
+                    it != contrasena -> "Las contraseñas no coinciden"
+                    else -> null
+                }
+            },
             label = { Text("Repetir contraseña *") },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            isError = errorConfirmar != null,
+            supportingText = { errorConfirmar?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
+            trailingIcon = {
+                if (errorConfirmar != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-
-        errorLocal?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
 
         if (mensaje.isNotEmpty()) {
             Text(mensaje, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -184,13 +251,19 @@ fun RegistroScreen(vm: SesionViewModel, volver: () -> Unit) {
 
         Button(
             onClick = {
-                if (nombre.isBlank() || alias.isBlank() || correo.isBlank() || contrasena.isBlank()) {
-                    errorLocal = "Por favor completa todos los campos requeridos (*)"
-                } else if (contrasena.length < 8) {
-                    errorLocal = "La contraseña debe tener al menos 8 caracteres"
-                } else if (contrasena != confirmarContrasena) {
-                    errorLocal = "Las contraseñas no coinciden"
-                } else {
+                val hayErrorNombre = nombre.isBlank()
+                val hayErrorAlias = alias.isBlank()
+                val hayErrorCorreo = !vm.esCorreoValido(correo)
+                val hayErrorClave = contrasena.length < 8
+                val hayErrorConfirmar = contrasena != confirmarContrasena
+
+                errorNombre = if (hayErrorNombre) "El nombre es obligatorio" else null
+                errorAlias = if (hayErrorAlias) "El alias es obligatorio" else null
+                errorCorreo = if (hayErrorCorreo) "Ingresa un correo válido" else null
+                errorContrasena = if (hayErrorClave) "Mínimo 8 caracteres" else null
+                errorConfirmar = if (hayErrorConfirmar) "Las contraseñas no coinciden" else null
+
+                if (!hayErrorNombre && !hayErrorAlias && !hayErrorCorreo && !hayErrorClave && !hayErrorConfirmar) {
                     vm.registrar(
                         nombre = nombre,
                         alias = alias,

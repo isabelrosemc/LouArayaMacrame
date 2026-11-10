@@ -15,7 +15,6 @@ import com.example.applouaraya.AppContainer
 import com.example.applouaraya.data.local.ClienteEntity
 import com.example.applouaraya.ui.screens.*
 import com.example.applouaraya.viewmodel.*
-import com.example.applouaraya.viewmodel.SesionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +31,7 @@ fun AppNavigation() {
 
     val cliente: ClienteEntity? by sesion.clienteAutenticado.collectAsStateWithLifecycle()
     val clienteId: Int? = cliente?.id
+    val esAdmin: Boolean by sesion.esAdmin.collectAsStateWithLifecycle()
 
     val entry by nav.currentBackStackEntryAsState()
     val ruta = entry?.destination?.route
@@ -56,22 +56,50 @@ fun AppNavigation() {
     }
 
     Scaffold(
-        topBar = { if (!publico && clienteId != null) TopAppBar(title = { Text("Lou Araya Macramé") }) },
+        topBar = {
+            if (!publico && clienteId != null) {
+                TopAppBar(
+                    title = {
+                        Text(if (esAdmin) "Lou Araya Macramé (Admin)" else "Lou Araya Macramé")
+                    }
+                )
+            }
+        },
         bottomBar = {
-            if (!publico && clienteId != null) NavigationBar {
-                listOf(
-                    Screen.Dashboard to "Inicio",
-                    Screen.Catalogo to "Catálogo",
-                    Screen.Favoritos to "Favoritos",
-                    Screen.Solicitudes to "Solicitudes",
-                    Screen.Perfil to "Perfil"
-                ).forEach { (pantalla, nombre) ->
-                    NavigationBarItem(
-                        selected = ruta == pantalla.route,
-                        onClick = { nav.navigate(pantalla.route) { launchSingleTop = true } },
-                        icon = { Text("•") },
-                        label = { Text(nombre) }
-                    )
+            if (!publico && clienteId != null) {
+                NavigationBar {
+                    if (esAdmin) {
+                        // Menú exclusivo de Administrador
+                        listOf(
+                            Screen.Dashboard to "Inicio",
+                            Screen.GestionProductos to "Productos",
+                            Screen.Solicitudes to "Solicitudes",
+                            Screen.Perfil to "Perfil"
+                        ).forEach { (pantalla, nombre) ->
+                            NavigationBarItem(
+                                selected = ruta == pantalla.route,
+                                onClick = { nav.navigate(pantalla.route) { launchSingleTop = true } },
+                                icon = { Text("•") },
+                                label = { Text(nombre) }
+                            )
+                        }
+                    } else {
+                        // Menú regular para clientes
+                        listOf(
+                            Screen.Dashboard to "Inicio",
+                            Screen.Catalogo to "Catálogo",
+                            Screen.Favoritos to "Favoritos",
+                            Screen.Solicitudes to "Solicitudes",
+                            Screen.Perfil to "Perfil"
+                        ).forEach { (pantalla, nombre) ->
+                            NavigationBarItem(
+                                selected = ruta == pantalla.route,
+                                onClick = { nav.navigate(pantalla.route) { launchSingleTop = true } },
+                                icon = { Text("•") },
+                                label = { Text(nombre) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -99,7 +127,10 @@ fun AppNavigation() {
                     PantallaPendiente("Sesión requerida", "Inicia sesión.")
                 } else {
                     DashboardScreen(
-                        irCatalogo = { nav.navigate(Screen.Catalogo.route) },
+                        irCatalogo = {
+                            if (esAdmin) nav.navigate(Screen.GestionProductos.route)
+                            else nav.navigate(Screen.Catalogo.route)
+                        },
                         irFavoritos = { nav.navigate(Screen.Favoritos.route) },
                         irMapa = { nav.navigate(Screen.Mapa.route) },
                         irQR = { nav.navigate(Screen.EscanerQR.route) },
@@ -152,10 +183,21 @@ fun AppNavigation() {
             }
             composable(Screen.Solicitudes.route) {
                 if (clienteId != null) {
-                    SolicitudesScreen(
-                        cotizacion,
-                        irCotizacion = { nav.navigate(Screen.Cotizacion.crearRuta()) }
-                    )
+                    if (esAdmin) {
+                        AdminSolicitudesScreen(vmCotizacion = cotizacion)
+                    } else {
+                        SolicitudesScreen(
+                            cotizacion,
+                            irCotizacion = { nav.navigate(Screen.Cotizacion.crearRuta()) }
+                        )
+                    }
+                }
+            }
+            composable(Screen.GestionProductos.route) {
+                if (esAdmin) {
+                    AdminGestionProductosScreen(vmProductos = productos)
+                } else {
+                    PantallaPendiente("Acceso restringido", "Requiere perfil de administrador.")
                 }
             }
             composable(Screen.Mapa.route) {
@@ -185,14 +227,11 @@ fun AppNavigation() {
                     )
                 }
             }
-            composable(Screen.GestionProductos.route) {
-                PantallaPendiente("Acceso restringido", "Falta autenticación administrativa del backend.")
-            }
             composable(Screen.GestionCampanas.route) {
-                PantallaPendiente("Acceso restringido", "Falta autenticación administrativa del backend.")
+                PantallaPendiente("Campañas", "Funcionalidad planificada para versión extendida.")
             }
             composable(Screen.Notificaciones.route) {
-                PantallaPendiente("Notificaciones", "Firebase y preferencias aún no configuradas.")
+                PantallaPendiente("Notificaciones", "Notificaciones locales y promociones activas.")
             }
         }
     }

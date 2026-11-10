@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.applouaraya.viewmodel.SesionViewModel
@@ -29,12 +32,20 @@ fun PerfilScreen(
     val mensaje by vm.mensaje.collectAsStateWithLifecycle()
 
     var modoEdicion by remember { mutableStateOf(false) }
+    var mostrarDialogoPassword by remember { mutableStateOf(false) }
 
+    // Estados de edición de datos personales
     var nombre by remember(cliente) { mutableStateOf(cliente?.nombre ?: "") }
     var correo by remember(cliente) { mutableStateOf(cliente?.correo ?: "") }
     var telefono by remember(cliente) { mutableStateOf(cliente?.telefono ?: "") }
     var direccion by remember(cliente) { mutableStateOf(cliente?.direccion ?: "") }
     var errorLocal by remember { mutableStateOf<String?>(null) }
+
+    // Estados para el cambio de contraseña
+    var passActual by remember { mutableStateOf("") }
+    var passNueva by remember { mutableStateOf("") }
+    var passConfirmar by remember { mutableStateOf("") }
+    var errorDialogo by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -71,6 +82,7 @@ fun PerfilScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Avatar
             Box(
                 modifier = Modifier
                     .size(90.dp)
@@ -92,8 +104,9 @@ fun PerfilScreen(
                 color = MaterialTheme.colorScheme.outline
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+            // Datos Personales
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it; errorLocal = null },
@@ -134,21 +147,23 @@ fun PerfilScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            errorLocal?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            if (errorLocal != null) {
+                Text(errorLocal!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
             if (mensaje.isNotEmpty()) {
                 Text(mensaje, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (modoEdicion) {
                 Button(
                     onClick = {
                         if (nombre.isBlank() || correo.isBlank()) {
-                            errorLocal = "Nombre y correo no pueden quedar vacíos"
+                            errorLocal = "Nombre y correo son obligatorios"
+                        } else if (!vm.esCorreoValido(correo)) {
+                            errorLocal = "Formato de correo inválido"
                         } else {
                             vm.actualizarPerfil(nombre, correo, telefono, direccion) { exitoso ->
                                 if (exitoso) modoEdicion = false
@@ -162,6 +177,22 @@ fun PerfilScreen(
                     Text("Guardar Cambios")
                 }
             } else {
+                // Botón para desplegar cambio de contraseña (observación del audio)
+                OutlinedButton(
+                    onClick = {
+                        passActual = ""
+                        passNueva = ""
+                        passConfirmar = ""
+                        errorDialogo = null
+                        mostrarDialogoPassword = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Lock, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Cambiar Contraseña")
+                }
+
                 OutlinedButton(
                     onClick = irSalir,
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -176,6 +207,75 @@ fun PerfilScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        // Diálogo modal para cambio de contraseña
+        if (mostrarDialogoPassword) {
+            AlertDialog(
+                onDismissRequest = { mostrarDialogoPassword = false },
+                title = { Text("Cambiar Contraseña") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(
+                            value = passActual,
+                            onValueChange = { passActual = it },
+                            label = { Text("Contraseña actual") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = passNueva,
+                            onValueChange = { passNueva = it },
+                            label = { Text("Nueva contraseña (mín 8 car.)") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = passConfirmar,
+                            onValueChange = { passConfirmar = it },
+                            label = { Text("Confirmar nueva contraseña") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        if (errorDialogo != null) {
+                            Text(
+                                text = errorDialogo!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            vm.cambiarContrasena(passActual, passNueva, passConfirmar) { exito, msg ->
+                                if (exito) {
+                                    mostrarDialogoPassword = false
+                                } else {
+                                    errorDialogo = msg
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Actualizar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarDialogoPassword = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }
