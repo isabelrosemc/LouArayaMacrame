@@ -112,8 +112,7 @@ fun AppNavigation() {
             composable(Screen.Bienvenida.route) {
                 BienvenidaScreen(
                     irLogin = { nav.navigate(Screen.Login.route) },
-                    irRegistro = { nav.navigate(Screen.Registro.route) },
-                    irDemo = { nav.navigate(Screen.Login.route) }
+                    irRegistro = { nav.navigate(Screen.Registro.route) }
                 )
             }
             composable(Screen.Login.route) {

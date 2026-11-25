@@ -61,7 +61,7 @@ fun obtenerImagenProducto(nombre: String): Int {
 }
 
 @Composable
-fun BienvenidaScreen(irLogin: () -> Unit, irRegistro: () -> Unit, irDemo: () -> Unit) {
+fun BienvenidaScreen(irLogin: () -> Unit, irRegistro: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -171,7 +171,7 @@ fun BienvenidaScreen(irLogin: () -> Unit, irRegistro: () -> Unit, irDemo: () -> 
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
-                Text("Comenzar", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text("Ingresar cuenta registrada", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
 
             OutlinedButton(
@@ -183,14 +183,7 @@ fun BienvenidaScreen(irLogin: () -> Unit, irRegistro: () -> Unit, irDemo: () -> 
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
-                Text("Ya tengo cuenta", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            }
-
-            TextButton(
-                onClick = irDemo,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Explorar modo demo", fontSize = 13.sp, color = TextoSecundario)
+                Text("Crear cuenta nueva", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -264,7 +257,8 @@ fun CatalogoScreen(
     favoritosViewModel: FavoritosViewModel,
     irDetalle: (Int) -> Unit
 ) {
-    val productos by viewModel.productos.collectAsStateWithLifecycle()
+    val estado by viewModel.uiState.collectAsStateWithLifecycle()
+    val productos = estado.productos
     val busqueda by viewModel.busqueda.collectAsStateWithLifecycle()
     val categoria by viewModel.categoria.collectAsStateWithLifecycle()
     val favoritos by favoritosViewModel.favoritos.collectAsStateWithLifecycle()
@@ -330,6 +324,29 @@ fun CatalogoScreen(
 
         Spacer(Modifier.height(14.dp))
 
+        // Estado 1: cargando (solo cuando aún no hay nada que mostrar)
+        if (estado.isLoading && productos.isEmpty()) {
+            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Terracota)
+            }
+        }
+        // Estado 2: error de red (la lista local sigue visible) con opción de reintentar
+        estado.errorMessage?.let { mensaje ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = ContenedorBeige)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(mensaje, color = Color(0xFFB3261E), fontSize = 12.sp)
+                    TextButton(onClick = { viewModel.cargarProductos() }) {
+                        Text("Reintentar", color = Terracota, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // Estado 3: datos listos
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -789,7 +806,8 @@ fun AdminGestionProductosScreen(vmProductos: ProductoViewModel) {
     var dimensiones by remember { mutableStateOf("") }
     var material by remember { mutableStateOf("Algodón natural") }
 
-    val productos by vmProductos.productos.collectAsStateWithLifecycle()
+    val estado by vmProductos.uiState.collectAsStateWithLifecycle()
+    val productos = estado.productos
 
     Column(
         modifier = Modifier
@@ -827,6 +845,11 @@ fun AdminGestionProductosScreen(vmProductos: ProductoViewModel) {
         }
 
         Spacer(Modifier.height(10.dp))
+
+        estado.errorMessage?.let { mensaje ->
+            Text(mensaje, color = Color(0xFFB3261E), fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+        }
 
         if (mostrarFormulario) {
             Card(
@@ -878,7 +901,7 @@ fun AdminGestionProductosScreen(vmProductos: ProductoViewModel) {
                                             descripcion = descripcion.trim().ifBlank { "Pieza artesanal" },
                                             material = material.trim(),
                                             dimensiones = dimensiones.trim().ifBlank { "Estándar" },
-                                            disponible = true
+                                            disponible = productos.find { it.id == productoIdEdicion }?.disponible ?: true
                                         )
                                     )
                                 }
@@ -926,6 +949,10 @@ fun AdminGestionProductosScreen(vmProductos: ProductoViewModel) {
                             mostrarFormulario = true
                         }) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Terracota)
+                        }
+                        // DELETE /productos/{id}
+                        IconButton(onClick = { vmProductos.eliminarProducto(p.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Terracota)
                         }
                     }
                 }

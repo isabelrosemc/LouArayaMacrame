@@ -6,7 +6,7 @@ Aplicación móvil desarrollada en Android Studio para el emprendimiento chileno
 ## Información de la Asignatura
 * Asignatura: Desarrollo de Aplicaciones Móviles (DSY1105)
 * Institución: Duoc UC
-* Evaluación: Evaluación Parcial 2
+* Evaluación: Evaluación Parcial 3
 
 ## Integrantes
 * Estudiante 1: [Isabel Muñoz]
@@ -20,6 +20,7 @@ Aplicación móvil desarrollada en Android Studio para el emprendimiento chileno
 * Interfaz de Usuario: Jetpack Compose con componentes de Material Design 3
 * Persistencia Local: Room Database (SQLite) con DAOs y entidades para usuarios, favoritos, solicitudes y lecturas QR
 * Asincronía y Flujos: Kotlin Coroutines y StateFlow
+* Consumo de API REST: Retrofit + Gson (catálogo de productos con GET, POST, PUT y DELETE), con catálogo local de respaldo si no hay conexión
 * Navegación: Navigation Compose con argumentos de ruta
 * Recursos Nativos:
     * Cámara: ML Kit Barcode Scanning para lectura de códigos QR de productos y Selector de Galería/Foto
@@ -41,6 +42,5 @@ Aplicación móvil desarrollada en Android Studio para el emprendimiento chileno
    git clone (https://github.com/isabelrosemc/LouArayaMacrame.git)
 2. Abrir el proyecto en Android Studio (última versión recomendada).
 3. Sincronizar el proyecto con los archivos de configuración de Gradle.
-4. (Opcional para mapas completos) Reemplazar la variable MAPS_API_KEY en AndroidManifest.xml o local.properties con una clave válida de Google Maps SDK.
 5. Conectar un dispositivo físico con Android 8.0 o superior (con Depuración USB activa) o iniciar un emulador de Android Studio.
 6. Ejecutar la aplicación presionando el botón Run (Shift + F10).

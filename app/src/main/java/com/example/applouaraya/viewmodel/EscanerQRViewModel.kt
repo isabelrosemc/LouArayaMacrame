@@ -12,21 +12,26 @@ class EscanerQRViewModel : ViewModel() {
     private val _mensaje = MutableStateFlow("")
     val mensaje = _mensaje.asStateFlow()
     private var repo: LocalRepository? = null
+    private val productoRepository = ProductoRepository()
     fun configurar(r: LocalRepository) { repo = r }
     fun validar(codigo: String, clienteId: Int?, irDetalle: (Int) -> Unit) {
         val id = Regex("^LOU-PRODUCTO-([0-9]+)$").matchEntire(codigo.trim())
             ?.groupValues?.get(1)?.toIntOrNull()
-        if (id == null || ProductoRepository().obtenerProductos().none { it.id == id }) {
+        if (id == null) {
             _mensaje.value = "Código QR desconocido o producto inexistente"
             return
         }
-        if (clienteId != null) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            if (!productoRepository.existeProducto(id)) {
+                _mensaje.value = "Código QR desconocido o producto inexistente"
+                return@launch
+            }
+            if (clienteId != null) {
                 try { repo?.registrarQR(clienteId, id) }
                 catch (_: Exception) { _mensaje.value = "No se pudo guardar la lectura QR" }
             }
+            irDetalle(id)
         }
-        irDetalle(id)
     }
     fun error(m: String) { _mensaje.value = m }
 }
