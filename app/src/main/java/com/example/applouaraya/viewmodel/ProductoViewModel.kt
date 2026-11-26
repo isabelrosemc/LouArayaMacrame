@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProductoViewModel : ViewModel() {
-    private val repository = ProductoRepository()
+class ProductoViewModel(
+    private val repository: ProductoRepository = ProductoRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductoUiState(isLoading = true))
     val uiState: StateFlow<ProductoUiState> = _uiState.asStateFlow()
